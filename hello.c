@@ -1,6 +1,17 @@
 /* I don't know what linux kernel file need include */
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+
+dev_t devno;  
+struct cdev hello_cdev;
+
+/* Step 2 works on device number  */
+
+unsigned int major = 253; // self define device number
+unsigned int minor = 0;
+struct file_operations hello_fops; // file operation points structer
 
 int myadd(int a, int b)
 {
@@ -12,19 +23,29 @@ int myadd(int a, int b)
 
 int hello_init(void) // kernel initialize function
 {
-  int i=0;
+  int i = 0;
   printk(KERN_EMERG "Hello world!\n");
- // while(1)
-  {
-    i++;
-  };
+  
+  printk(KERN_EMERG "tring to allocate modern device\n");
+  i = alloc_chrdev_region(&devno, minor,1, "hello_drv");
+  major = MAJOR(devno);
+  minor = MINOR(devno);
+  printk(KERN_EMERG "i =%d major = 0x%d, minor =  0x%d\n",i, major , minor);
 
-  myadd(1,2);
+  cdev_init(&hello_cdev, &hello_fops);
+  printk(KERN_EMERG "i =%d cdev_initd\n",i);
+  
+  hello_cdev.owner = THIS_MODULE;
+  i = cdev_add(&hello_cdev, devno, 1);
+  printk(KERN_EMERG "i =%d cdev_addd \n",i);
+
   return 0;
 }
 
 void hello_exit(void) // kernel clean up function
 {
+  
+  unregister_chrdev_region(devno,1);
   printk("<1>""good bye! and good night!\n");
 }
 
