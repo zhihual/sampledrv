@@ -1,24 +1,39 @@
 /* I don't know what linux kernel file need include */
-#include <linux/moudle.h>
+#include <linux/module.h>
 #include <linux/init.h>
 
-
-static int __init hello_init(void) // kernel initialize function
+int myadd(int a, int b)
 {
-  printk("Hello world!\n");
+  int c = 0;
+  c = a+b;
+  printk(KERN_EMERG "sum=%d\n", c);
+  return c;
+}
+
+int hello_init(void) // kernel initialize function
+{
+  int i=0;
+  printk(KERN_EMERG "Hello world!\n");
+ // while(1)
+  {
+    i++;
+  };
+
+  myadd(1,2);
   return 0;
 }
 
-static void __exit hello_exit(void) // kernel clean up function
+void hello_exit(void) // kernel clean up function
 {
-  printk("good bye! and good night!\n");
+  printk("<1>""good bye! and good night!\n");
 }
 
-moudle_init(hello_init); // point to insmod load entry point
-moudle_exit(hello_exit); // point to exit entry point
+module_init(hello_init); // point to insmod load entry point
+module_exit(hello_exit); // point to exit entry point
 
-MOUDLE_LICENCE("GPL"); //GPL licence
 
-MOUDLE_AUTHOR("Zhihual"); //Author
+MODULE_LICENSE("GPL"); //GPL licence
 
-MOUDLE_VERSION("0.1");// First version
+MODULE_AUTHOR("Zhihual"); //Author
+
+MODULE_VERSION("1.0");// First version
