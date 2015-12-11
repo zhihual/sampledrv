@@ -1,4 +1,4 @@
-/* I don't know what linux kernel file need include *
+/* I don't know what linux kernel file need include */
 #include <linux/moudle.h>
 #include <linux/init.h>
 
