@@ -4,7 +4,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
-
+#include <linux/uaccess.h>
 dev_t devno;  
 struct cdev hello_cdev;
 
@@ -17,10 +17,15 @@ unsigned int minor = 0;
 
 int hello_open(struct inode*, struct file*);
 int hello_release(struct inode *, struct file*);
+ssize_t hello_write(struct file *filp, const char __user *buf, size_t count, loff_t* offset);
+ssize_t hello_read(struct file *filp, char __user *buf, size_t count, loff_t*offset);
+
 
 struct file_operations hello_fops = {
        .open = hello_open,
        .release = hello_release,
+       .write = hello_write,
+       .read = hello_read,
 };
 
 int myadd(int a, int b)
@@ -45,6 +50,42 @@ int hello_release(struct inode * node, struct file* filp)
   printk(KERN_EMERG "hello_release!\n");
   return 0;
 }
+
+ssize_t hello_write(struct file *filp, const char __user *buf, size_t count, loff_t* offset)
+{
+   char kbuf[20] = {0};
+   int ret = 0;
+
+   //memcpy(kbuf, buf, count);
+
+   if(copy_from_user(kbuf, buf, count)){
+     ret = -EFAULT;
+   }else{
+     ret = count;
+   } 
+
+   printk(KERN_EMERG "write %s count=%d, buf=%p\n", kbuf, count, buf );
+
+   return ret;
+}
+
+
+ssize_t hello_read(struct file *filp, char __user *buf, size_t count, loff_t*offset)
+{
+  int ret = 0;
+  char* data = "test_data";
+//  memcpy(buf, data, count );
+  if(copy_to_user(buf, data, count)){
+    ret = -EFAULT;
+  }else{
+    ret = count;
+  }
+
+  printk(KERN_EMERG "read %s count=%d, buf=%p\n", buf, count, buf );
+  return ret;
+}
+
+
 
 //struct class *hello_class = NULL;
 
