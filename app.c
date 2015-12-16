@@ -18,6 +18,8 @@ struct ioctl_data{
 #define HELLO_KBUF _IOW(HELLO_MAGIC, 3, struct ioctl_data )
 
 
+int syncIO = 0;
+
 int main(void)
 {
   char buf[20] = {0};
@@ -30,22 +32,42 @@ int main(void)
       .buf = "123456789"
   };
 
-  fd = open("/dev/hello", O_RDWR);
-
-  if (fd < 0 )
+  if (syncIO == 1)
   {
-     perror("open");
-     return -1;
+	  fd = open("/dev/hello", O_RDWR);
+
+	  if (fd < 0 )
+	  {
+		  perror("open");
+		  return -1;
+	  }
+
+	  write(fd, "hehe linux",11 );
+	  ret = lseek(fd, 0, SEEK_SET);
+
+	  ret = ioctl(fd,  HELLO_KBUF, (void*)&my_data);
+
+
+	  read(fd, buf, 11);
+  }else{
+         fd = open("/dev/hello", O_RDWR|O_NONBLOCK);
+         
+	 if (fd < 0 )
+	 {
+	   perror("open");
+	   return -1;
+	 }
+
+         ret = read(fd, buf, 10);
+         if (ret = -1)
+         {
+           perror("open");
+         }
+
+         //write(fd, "my linux", 10);
   }
-
-  write(fd, "hehe linux",11 );
-  ret = lseek(fd, 0, SEEK_SET);
   
-  ret = ioctl(fd,  HELLO_KBUF, (void*)&my_data);
-
-
-  read(fd, buf, 11);
-
+  
   printf("<app>buf is [%s]\n", buf);
 
   

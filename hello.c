@@ -5,6 +5,9 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/uaccess.h>
+#include <linux/wait.h>
+#include <linux/sched.h>
+
 
 //dev_t devno;  
 //struct cdev hello_cdev;
@@ -24,6 +27,7 @@ struct _hello_dev_t{
    unsigned int cur_size;
    dev_t devno;
    struct cdev hello_cdev;
+   wait_queue_head_t test_queue; 
 };
 
 //struct _hello_dev_t my_dev;
@@ -169,6 +173,7 @@ ssize_t hello_write(struct file *filp, const char __user *buf, size_t count, lof
      *offset += count;
      printk(KERN_EMERG "write %d bytes, cur_size:[%d]\n", count, dev->cur_size);
      printk(KERN_EMERG "kbuf is [%s]\n", dev->kbuf);
+     wake_up_interruptible(&dev->test_queue);
    } 
 
    return ret;
@@ -184,10 +189,22 @@ ssize_t hello_read(struct file *filp, char __user *buf, size_t count, loff_t*off
    if(*offset >= DEV_SIZE){
       return count ? -ENXIO: 0 ;
    }
+   printk("read 0x%x\n", filp->f_flags);
+#if 0
+   if (filp->f_flags & O_NONBLOCK)
+   {
+      printk("can't read");
+      return -EAGAIN;
+   }
+#endif
+   printk("%x read data sleep\n", filp->f_flags);
+   
+   if (wait_event_interruptible(dev->test_queue, dev->cur_size>0))
+       return -EFAULT;
 
    if(*offset+count > DEV_SIZE){
       count = DEV_SIZE-*offset;
-  }
+   }
   if(copy_to_user(buf, dev->kbuf+ *offset, count)){
     ret = -EFAULT;
   }else{
@@ -317,6 +334,8 @@ int hello_init(void) // kernel initialize function
   printk(KERN_EMERG "i =%d cdev_initd\n",i);
   
   my_dev.hello_cdev.owner = THIS_MODULE;
+ 
+  init_waitqueue_head(&my_dev.test_queue);
   i = cdev_add(&my_dev.hello_cdev, my_dev.devno, 1);
   printk(KERN_EMERG "i =%d cdev_addd \n",i);
 #if 0
